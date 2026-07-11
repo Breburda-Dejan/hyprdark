@@ -1,0 +1,39 @@
+/* hyprdark — wlogout (Catppuccin Mocha) */
+
+* {
+    background-image: none;
+    font-family: "JetBrainsMono Nerd Font";
+}
+
+window {
+    background-color: rgba(17, 17, 27, 0.55);
+}
+
+button {
+    background-color: rgba(30, 30, 46, 0.95);
+    color: #cdd6f4;
+    border: 2px solid #45475a;
+    border-radius: 16px;
+    margin: 8px;
+    font-size: 15px;
+    background-repeat: no-repeat;
+    background-position: center 35%;
+    background-size: 22%;
+    text-decoration-color: transparent;
+    box-shadow: none;
+}
+
+button:focus,
+button:active,
+button:hover {
+    background-color: #313244;
+    border-color: #cba6f7;
+    color: #cba6f7;
+    outline: none;
+}
+
+#lock     { background-image: url("ICONDIR/lock.svg"); }
+#logout   { background-image: url("ICONDIR/logout.svg"); }
+#suspend  { background-image: url("ICONDIR/suspend.svg"); }
+#reboot   { background-image: url("ICONDIR/reboot.svg"); }
+#shutdown { background-image: url("ICONDIR/shutdown.svg"); }

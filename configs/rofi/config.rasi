@@ -1,0 +1,15 @@
+/* hyprdark — rofi */
+configuration {
+    modi: "drun,run,window";
+    font: "JetBrainsMono Nerd Font 12";
+    show-icons: true;
+    icon-theme: "Papirus-Dark";
+    display-drun: "󰣇";
+    display-run: "";
+    display-window: "󰖯";
+    drun-display-format: "{name}";
+    window-format: "{c} · {t}";
+    matching: "fuzzy";
+    terminal: "alacritty";
+}
+@theme "hyprdark"

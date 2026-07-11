@@ -1,0 +1,83 @@
+/* hyprdark — rofi theme (Catppuccin Mocha) */
+* {
+    base:     #1e1e2e;
+    mantle:   #181825;
+    surface0: #313244;
+    surface1: #45475a;
+    text:     #cdd6f4;
+    subtext:  #a6adc8;
+    mauve:    #cba6f7;
+    lavender: #b4befe;
+    red:      #f38ba8;
+
+    background-color: transparent;
+    text-color: @text;
+}
+
+window {
+    width: 620px;
+    background-color: rgba(30, 30, 46, 0.96);
+    border: 2px;
+    border-color: @mauve;
+    border-radius: 14px;
+    padding: 14px;
+}
+
+mainbox {
+    spacing: 10px;
+    children: [ inputbar, listview ];
+}
+
+inputbar {
+    background-color: @surface0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    spacing: 10px;
+    children: [ prompt, entry ];
+}
+
+prompt {
+    text-color: @mauve;
+}
+
+entry {
+    placeholder: "search…";
+    placeholder-color: @subtext;
+    cursor: text;
+}
+
+listview {
+    lines: 8;
+    spacing: 4px;
+    scrollbar: false;
+    cycle: true;
+}
+
+element {
+    padding: 8px 12px;
+    border-radius: 10px;
+    spacing: 10px;
+}
+
+element-icon {
+    size: 22px;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+}
+
+element selected.normal {
+    background-color: @surface0;
+    text-color: @lavender;
+}
+
+element-text {
+    vertical-align: 0.5;
+    highlight: bold #cba6f7;
+}
+
+element urgent {
+    text-color: @red;
+}
