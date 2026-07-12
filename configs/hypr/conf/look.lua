@@ -32,14 +32,14 @@ hl.config({
     },
     animations = { enabled = true },
     dwindle = {
-        pseudotile = true,
         preserve_split = true,
+        -- (pseudotile was removed in Hyprland 0.55 — pseudo is per-window now)
     },
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo = true,
-        vfr = true,
         focus_on_activate = true,
+        -- (vfr moved to debug: in 0.55 and shouldn't be set in prod)
     },
 })
 

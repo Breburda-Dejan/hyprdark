@@ -28,14 +28,14 @@ window#waybar {
 .modules-center,
 .modules-right {
     background: alpha(@bg, 0.92);
-    border: 1.5px solid alpha(@border, 0.9);
+    border: 2px solid alpha(@border, 0.9);
     border-radius: 14px;
     padding: 0 6px;
 }
 
 tooltip {
     background: @bg2;
-    border: 1.5px solid @border;
+    border: 2px solid @border;
     border-radius: 10px;
 }
 tooltip label {
@@ -60,7 +60,10 @@ tooltip label {
 #workspaces button.empty   { color: @faint; }
 #workspaces button.visible { color: @subtext; }
 #workspaces button.active  { color: @white; }
-#workspaces button.urgent  { color: @white; text-decoration: underline; }
+#workspaces button.urgent  {
+    color: @white;
+    animation: blink 1s steps(4) infinite alternate;
+}
 #workspaces button:hover {
     color: @white;
     background: transparent;
