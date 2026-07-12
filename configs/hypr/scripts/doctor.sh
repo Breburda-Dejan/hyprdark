@@ -20,6 +20,17 @@ json.loads(s)
 print(" ✓ config.jsonc parses")
 PY
 
+echo; echo "── wallpaper ──"
+if [[ -f "$HOME/.config/hypr/wallpaper.png" ]]; then
+    echo " ✓ wallpaper file present"
+else
+    echo " ✗ ~/.config/hypr/wallpaper.png missing — hyprpaper will show black"
+fi
+if grep -q '~' "$HOME/.config/hypr/hyprpaper.conf" 2>/dev/null; then
+    echo " ! hyprpaper.conf uses '~' paths — some builds need absolute; run install.sh again or sed them to \$HOME"
+fi
+hyprctl hyprpaper listloaded 2>/dev/null | grep -q . && echo " ✓ hyprpaper reports a loaded wallpaper" || echo " ! hyprpaper reports nothing loaded (black background?)"
+
 echo; echo "── font ──"
 if fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd"; then
     echo " ✓ JetBrainsMono Nerd Font installed"

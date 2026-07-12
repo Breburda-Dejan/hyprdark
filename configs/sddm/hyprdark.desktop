@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=Hyprland (hyprdark)
+Comment=Hyprland via the official start-hyprland wrapper
+Exec=start-hyprland
+Type=Application
+DesktopNames=Hyprland

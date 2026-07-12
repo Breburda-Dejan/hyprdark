@@ -216,6 +216,9 @@ cp -r "$SCRIPT_DIR/configs/wlogout"   "$HOME/.config/wlogout"
 cp    "$SCRIPT_DIR/wallpapers/hyprdark.png" "$HOME/.config/hypr/wallpaper.png"
 chmod +x "$HOME/.config/hypr/scripts/"*.sh
 
+# hyprpaper: absolute wallpaper path (~ expansion isn't guaranteed)
+sed -i "s|~/.config|$HOME/.config|g" "$HOME/.config/hypr/hyprpaper.conf"
+
 # wlogout: resolve icon dir to an absolute path (GTK CSS needs it)
 sed -i "s|ICONDIR|$HOME/.config/wlogout/icons|g" "$HOME/.config/wlogout/style.css"
 
@@ -262,6 +265,19 @@ label {
 EOF
 fi
 sed -i '/__BATTERY_LABEL__/d' "$HLK"
+
+# laptop: take lid handling away from logind so lock → 3 s → suspend is ours
+if $IS_LAPTOP && ask "Let hyprdark handle the lid switch (lock, 3 s, suspend)?"; then
+    sudo mkdir -p /etc/systemd/logind.conf.d
+    sudo tee /etc/systemd/logind.conf.d/90-hyprdark.conf >/dev/null << 'EOF'
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore
+EOF
+    sudo systemctl kill -s HUP systemd-logind 2>/dev/null || true
+    ok "lid switch → hyprdark (logind told to ignore it)"
+fi
 
 # machine.lua: the hardware-specific bits of the Hyprland Lua config
 MC="$HOME/.config/hypr/machine.lua"
@@ -348,24 +364,74 @@ ok "Services enabled"
 
 # ── SDDM login screen ───────────────────────────────────────────────────────
 SDDM_ENABLED=false
-if ask "Enable the SDDM login screen (hyprdark theme)?"; then
-    log "Installing the hyprdark SDDM theme…"
-    sudo mkdir -p /usr/share/sddm/themes /etc/sddm.conf.d
+if ask "Enable the SDDM login screen?"; then
+    SDDM_THEME="hyprdark-sddm"
+    if ! $ASSUME_YES; then
+        echo "   themes:  1) hyprdark (bundled, monochrome)   2) astronaut (AUR, animated)"
+        read -rp "   pick [1]: " tsel
+        [[ "${tsel:-1}" == "2" ]] && SDDM_THEME="sddm-astronaut-theme"
+    fi
+
+    if [[ "$SDDM_THEME" == "sddm-astronaut-theme" ]]; then
+        if $USE_AUR; then
+            ensure_aur_helper
+            sudo pacman -S --needed "${NOCONFIRM[@]}" qt6-svg qt6-virtualkeyboard qt6-multimedia 2>/dev/null || true
+            "$AUR_HELPER" -S --needed "${NOCONFIRM[@]}" sddm-astronaut-theme || {
+                warn "astronaut theme failed to install — falling back to hyprdark"
+                SDDM_THEME="hyprdark-sddm"
+            }
+        else
+            warn "--no-aur set — astronaut is AUR-only, using bundled hyprdark theme"
+            SDDM_THEME="hyprdark-sddm"
+        fi
+    fi
+
+    log "Installing SDDM configuration (theme: $SDDM_THEME)…"
+    sudo mkdir -p /usr/share/sddm/themes /etc/sddm.conf.d /usr/share/wayland-sessions
     sudo cp -r "$SCRIPT_DIR/configs/sddm/hyprdark-sddm" /usr/share/sddm/themes/
     sudo cp "$SCRIPT_DIR/wallpapers/hyprdark.png" /usr/share/sddm/themes/hyprdark-sddm/background.png
-    printf '[Theme]\nCurrent=hyprdark-sddm\n' | sudo tee /etc/sddm.conf.d/10-hyprdark.conf >/dev/null
+    # session entry that uses the official start-hyprland wrapper
+    sudo cp "$SCRIPT_DIR/configs/sddm/hyprdark.desktop" /usr/share/wayland-sessions/hyprdark.desktop
+
+    # neutralize competing Theme settings — /etc/sddm.conf and other conf.d
+    # files can override ours, which is why a previously set theme "sticks"
+    if [[ -f /etc/sddm.conf ]] && grep -q '^[[:space:]]*Current=' /etc/sddm.conf; then
+        sudo cp /etc/sddm.conf "/etc/sddm.conf.bak-hyprdark-$TS"
+        sudo sed -i "s/^[[:space:]]*Current=.*/Current=$SDDM_THEME/" /etc/sddm.conf
+        warn "existing theme in /etc/sddm.conf overridden (backup: /etc/sddm.conf.bak-hyprdark-$TS)"
+    fi
+    for f in /etc/sddm.conf.d/*.conf; do
+        [[ -e "$f" ]] || continue
+        [[ "$f" == *zz-hyprdark* ]] && continue
+        if grep -q '^[[:space:]]*Current=' "$f"; then
+            sudo sed -i 's/^\([[:space:]]*Current=.*\)/#\1  # disabled by hyprdark/' "$f"
+            warn "theme setting in $f disabled (was overriding)"
+        fi
+    done
+    sudo rm -f /etc/sddm.conf.d/10-hyprdark.conf   # from older hyprdark versions
+    printf '[Theme]\nCurrent=%s\n' "$SDDM_THEME" | sudo tee /etc/sddm.conf.d/zz-hyprdark.conf >/dev/null
+
+    # preselect the start-hyprland session for this user
+    sudo mkdir -p /var/lib/sddm
+    printf '[Last]\nSession=/usr/share/wayland-sessions/hyprdark.desktop\nUser=%s\n' "$USER" \
+        | sudo tee /var/lib/sddm/state.conf >/dev/null || true
+
     sudo systemctl enable sddm.service 2>/dev/null || true
     SDDM_ENABLED=true
-    ok "SDDM enabled with the hyprdark theme"
+    ok "SDDM enabled — pick the 'Hyprland (hyprdark)' session at the greeter"
 fi
 
 # ── autostart on tty1 (only without SDDM) ───────────────────────────────────
 if ! $SDDM_ENABLED && $AUTOSTART && ! grep -q "hyprdark autostart" "$HOME/.zprofile" 2>/dev/null; then
     if ask "Start Hyprland automatically after login on tty1?"; then
         cat >> "$HOME/.zprofile" << 'EOF'
-# hyprdark autostart — launch Hyprland on tty1
+# hyprdark autostart — launch Hyprland on tty1 via the official wrapper
 if [[ -z "$DISPLAY" && -z "$WAYLAND_DISPLAY" && "$(tty)" == "/dev/tty1" ]]; then
-    exec Hyprland
+    if command -v start-hyprland >/dev/null 2>&1; then
+        exec start-hyprland
+    else
+        exec Hyprland      # pre-0.53 fallback
+    fi
 fi
 EOF
         ok "Hyprland will start on tty1 login"
@@ -403,7 +469,8 @@ echo "
    Keyboard layout is 'de' — change in ~/.config/hypr/conf/input.lua.
    Full bind list: ~/.config/hypr/conf/keybindings.lua (and the README).
 
-   Change display setup:  ~/.config/hypr/scripts/setup-display.sh
+   Change display setup:  ~/.config/hypr/scripts/setup-display.sh  (--auto works too)
+   Screen flickering?     ~/.config/hypr/scripts/flicker-doctor.sh
    Undo the install:      ./rollback.sh   (in this tarball dir)
 "
 $HAS_NVIDIA && warn "NVIDIA: make sure nvidia-dkms (or nvidia-open-dkms) is installed & up to date."
