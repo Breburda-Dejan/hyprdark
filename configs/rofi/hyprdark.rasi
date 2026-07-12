@@ -1,14 +1,11 @@
-/* hyprdark — rofi theme (Catppuccin Mocha) */
+/* hyprdark — rofi theme (monochrome) */
 * {
-    base:     #1e1e2e;
-    mantle:   #181825;
-    surface0: #313244;
-    surface1: #45475a;
-    text:     #cdd6f4;
-    subtext:  #a6adc8;
-    mauve:    #cba6f7;
-    lavender: #b4befe;
-    red:      #f38ba8;
+    bg:      #0c0c0c;
+    surface: #1c1c1c;
+    border:  #2e2e2e;
+    text:    #e8e8e8;
+    subtext: #9a9a9a;
+    white:   #ffffff;
 
     background-color: transparent;
     text-color: @text;
@@ -16,29 +13,24 @@
 
 window {
     width: 620px;
-    background-color: rgba(30, 30, 46, 0.96);
+    background-color: rgba(12, 12, 12, 0.96);
     border: 2px;
-    border-color: @mauve;
+    border-color: @border;
     border-radius: 14px;
     padding: 14px;
 }
 
-mainbox {
-    spacing: 10px;
-    children: [ inputbar, listview ];
-}
+mainbox { spacing: 10px; children: [ inputbar, listview ]; }
 
 inputbar {
-    background-color: @surface0;
+    background-color: @surface;
     border-radius: 10px;
     padding: 10px 14px;
     spacing: 10px;
     children: [ prompt, entry ];
 }
 
-prompt {
-    text-color: @mauve;
-}
+prompt { text-color: @white; }
 
 entry {
     placeholder: "search…";
@@ -46,38 +38,17 @@ entry {
     cursor: text;
 }
 
-listview {
-    lines: 8;
-    spacing: 4px;
-    scrollbar: false;
-    cycle: true;
-}
+listview { lines: 8; spacing: 4px; scrollbar: false; cycle: true; }
 
-element {
-    padding: 8px 12px;
-    border-radius: 10px;
-    spacing: 10px;
-}
+element { padding: 8px 12px; border-radius: 10px; spacing: 10px; }
+element-icon { size: 22px; }
 
-element-icon {
-    size: 22px;
-}
-
-element normal.normal,
-element alternate.normal {
-    background-color: transparent;
-}
+element normal.normal, element alternate.normal { background-color: transparent; }
 
 element selected.normal {
-    background-color: @surface0;
-    text-color: @lavender;
+    background-color: @surface;
+    text-color: @white;
 }
 
-element-text {
-    vertical-align: 0.5;
-    highlight: bold #cba6f7;
-}
-
-element urgent {
-    text-color: @red;
-}
+element-text { vertical-align: 0.5; highlight: bold #ffffff; }
+element urgent { text-color: @white; }

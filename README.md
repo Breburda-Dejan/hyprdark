@@ -1,8 +1,8 @@
 # hyprdark
 
 A one-shot post-install for a fresh **Arch Linux** that sets up a dark, polished
-**Hyprland** desktop — Catppuccin Mocha everywhere, restrained animations, nothing
-that burns your eyes.
+**Hyprland** desktop — a clean **black & white / monochrome** theme everywhere,
+restrained animations, nothing that burns your eyes.
 
 **Requires Hyprland ≥ 0.55** — the compositor config is written in **Lua**
 (`~/.config/hypr/hyprland.lua`), which is the current format; hyprlang `.conf`
@@ -24,13 +24,14 @@ clobber older backups — collisions get an `.old-<timestamp>` suffix.
 | Piece | Tool |
 |---|---|
 | Compositor | hyprland (Lua config) + hyprpaper, hyprpolkitagent, portals |
+| Login screen | SDDM with a custom minimal monochrome theme (optional prompt) |
 | Bar | waybar — floating rounded pills |
 | Launcher | rofi |
 | Terminal | alacritty |
 | Notifications | dunst (progress-bar OSD for volume/brightness) |
 | Idle / lock | hypridle + hyprlock (blurred-screenshot lockscreen) |
-| Power menu | wlogout (AUR — yay is bootstrapped automatically if missing) |
-| Shell | zsh + oh-my-zsh, custom `hyprdark` prompt, autosuggestions, syntax highlighting, eza/bat/fzf |
+| Power menu | wlogout — one row, navigate with ←/→ + Enter or the mouse; focused field inverts to white (AUR — yay bootstrapped if missing) |
+| Shell | zsh + oh-my-zsh, custom `hyprdark` prompt (user@host + cwd + git), autosuggestions (inline autocomplete), extra completions, syntax highlighting, eza/bat/fzf |
 | Apps (your binds) | firefox, thunderbird, dolphin + ark, code, keepassxc, discord, spotify-launcher, pycharm-community |
 | Extras | pipewire stack, cliphist history, grim/slurp screenshots, btop, xdotool, Papirus icons, JetBrainsMono Nerd Font, GTK forced dark |
 
@@ -48,7 +49,8 @@ The installer probes your hardware and writes the result to
 - **Laptop** (battery / DMI chassis / hostnamectl): lid-switch binds with
   **clamshell mode** — lid closed + external monitor = internal panel off;
   no external monitor = lock, then logind suspends. Battery module in waybar,
-  suspend-after-15-min idle, `power-profiles-daemon`.
+  suspend-after-15-min idle, `power-profiles-daemon`, and the **lockscreen
+  shows battery state** under the password field.
 - **Backlight**: brightness waybar module + `XF86MonBrightness` keys.
 - **Desktop**: none of the above — no dead battery widget, no surprise suspends.
 - **NVIDIA**: recommended Wayland env vars + `no_hardware_cursors`.
@@ -106,13 +108,16 @@ Full list: `~/.config/hypr/conf/keybindings.lua` — edit and save, it reloads l
 ## Customizing
 
 - **Keyboard layout**: default is **de** — `conf/input.lua` → `kb_layout`.
-- **Wallpaper**: replace `~/.config/hypr/wallpaper.png`.
-- **Accent**: Catppuccin *mauve* (`#cba6f7`) — grep it across
-  `~/.config/{hypr,waybar,rofi,dunst,wlogout}` and swap any Mocha accent in.
+- **Wallpaper**: replace `~/.config/hypr/wallpaper.png` (SDDM keeps its own
+  copy at `/usr/share/sddm/themes/hyprdark-sddm/background.png`).
+- **Palette**: monochrome — `#0c0c0c` surfaces, `#2e2e2e` borders, `#e8e8e8`
+  text, pure white accents. Grep those across
+  `~/.config/{hypr,waybar,rofi,dunst,wlogout}` to tint things.
 - **Idle timings**: `hypridle.conf` (lock 5 min, screen off 8 min, laptop
   suspend 15 min).
-- **Display manager**: none installed — tty1 autostart via `~/.zprofile` is
-  offered instead; `sudo pacman -S sddm && sudo systemctl enable sddm` also works.
+- **Login screen**: SDDM + the bundled theme is offered during install
+  (config at `/etc/sddm.conf.d/10-hyprdark.conf`). Decline it and you get the
+  tty1 autostart prompt instead.
 
 ## Flags
 

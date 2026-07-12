@@ -23,10 +23,8 @@ hl.window_rule({
     no_focus = true,
 })
 
--- blur behind the shell layers (guarded: effect names may evolve)
-pcall(function()
-    hl.layer_rule({ name = "blur-waybar", match = { namespace = "^waybar$" },        blur = true })
-    hl.layer_rule({ name = "blur-rofi",   match = { namespace = "^rofi$" },          blur = true, ignore_zero = true })
-    hl.layer_rule({ name = "blur-dunst",  match = { namespace = "^notifications$" }, blur = true, ignore_zero = true })
-    hl.layer_rule({ name = "blur-wlogout",match = { namespace = "^logout_dialog$" }, blur = true })
-end)
+-- blur behind the shell layers (ignore_alpha = 0 ≈ old "ignorezero")
+hl.layer_rule({ name = "blur-waybar",  match = { namespace = "^waybar$" },        blur = true })
+hl.layer_rule({ name = "blur-rofi",    match = { namespace = "^rofi$" },          blur = true, ignore_alpha = 0 })
+hl.layer_rule({ name = "blur-dunst",   match = { namespace = "^notifications$" }, blur = true, ignore_alpha = 0 })
+hl.layer_rule({ name = "blur-wlogout", match = { namespace = "^logout_dialog$" }, blur = true })

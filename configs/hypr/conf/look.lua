@@ -1,4 +1,4 @@
--- hyprdark — look & feel (Catppuccin Mocha)
+-- hyprdark — look & feel (monochrome)
 -- Structure follows /usr/share/hypr/hyprland.lua (the shipped example).
 
 hl.config({
@@ -7,8 +7,8 @@ hl.config({
         gaps_out = 10,
         border_size = 2,
         col = {
-            active_border = { colors = { "rgba(cba6f7ee)", "rgba(b4befeee)" }, angle = 45 }, -- mauve → lavender
-            inactive_border = "rgba(45475aaa)",                                              -- surface1
+            active_border = { colors = { "rgba(e8e8e8ee)", "rgba(9a9a9aee)" }, angle = 45 }, -- white → gray
+            inactive_border = "rgba(2e2e2eaa)",
         },
         resize_on_border = true,
         layout = "dwindle",
@@ -27,7 +27,7 @@ hl.config({
             enabled = true,
             range = 18,
             render_power = 3,
-            color = 0xaa11111b,     -- crust @ ~66%
+            color = 0xaa000000,
         },
     },
     animations = { enabled = true },
@@ -38,7 +38,6 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,
         disable_hyprland_logo = true,
-        disable_splash_rendering = true,
         vfr = true,
         focus_on_activate = true,
     },

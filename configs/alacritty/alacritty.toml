@@ -20,51 +20,51 @@ style = { shape = "Beam", blinking = "On" }
 thickness = 0.2
 
 [colors.primary]
-background = "#1e1e2e"
-foreground = "#cdd6f4"
-dim_foreground = "#7f849c"
-bright_foreground = "#cdd6f4"
+background = "#0a0a0a"
+foreground = "#e6e6e6"
+dim_foreground = "#8a8a8a"
+bright_foreground = "#ffffff"
 
 [colors.cursor]
-text = "#1e1e2e"
-cursor = "#f5e0dc"
+text = "#0a0a0a"
+cursor = "#ffffff"
 
 [colors.selection]
-text = "#1e1e2e"
-background = "#f5e0dc"
+text = "#0a0a0a"
+background = "#e6e6e6"
 
 [colors.search.matches]
-foreground = "#1e1e2e"
-background = "#a6adc8"
+foreground = "#0a0a0a"
+background = "#9a9a9a"
 
 [colors.search.focused_match]
-foreground = "#1e1e2e"
-background = "#a6e3a1"
+foreground = "#0a0a0a"
+background = "#ffffff"
 
 [colors.hints.start]
-foreground = "#1e1e2e"
-background = "#f9e2af"
+foreground = "#0a0a0a"
+background = "#e6e6e6"
 
 [colors.hints.end]
-foreground = "#1e1e2e"
-background = "#a6adc8"
+foreground = "#0a0a0a"
+background = "#8a8a8a"
 
 [colors.normal]
-black   = "#45475a"
-red     = "#f38ba8"
-green   = "#a6e3a1"
-yellow  = "#f9e2af"
-blue    = "#89b4fa"
-magenta = "#f5c2e7"
-cyan    = "#94e2d5"
-white   = "#bac2de"
+black   = "#2a2a2a"
+red     = "#bf8a8a"
+green   = "#9db08f"
+yellow  = "#cfc9a3"
+blue    = "#8fa3b8"
+magenta = "#b39ab3"
+cyan    = "#93b3ad"
+white   = "#c9c9c9"
 
 [colors.bright]
-black   = "#585b70"
-red     = "#f38ba8"
-green   = "#a6e3a1"
-yellow  = "#f9e2af"
-blue    = "#89b4fa"
-magenta = "#f5c2e7"
-cyan    = "#94e2d5"
-white   = "#a6adc8"
+black   = "#4a4a4a"
+red     = "#d4a3a3"
+green   = "#b3c4a6"
+yellow  = "#e0dabb"
+blue    = "#a8bccf"
+magenta = "#c7b0c7"
+cyan    = "#abc9c3"
+white   = "#f0f0f0"

@@ -23,7 +23,7 @@
 
     corner_radius = 12
     frame_width = 2
-    frame_color = "#cba6f7"
+    frame_color = "#3a3a3a"
     separator_color = frame
     gap_size = 8
     padding = 12
@@ -33,7 +33,7 @@
     progress_bar_height = 8
     progress_bar_corner_radius = 4
     progress_bar_frame_width = 0
-    highlight = "#cba6f7"
+    highlight = "#e8e8e8"
 
     idle_threshold = 120
     mouse_left_click = do_action, close_current
@@ -42,19 +42,19 @@
     dmenu = rofi -dmenu -p dunst
 
 [urgency_low]
-    background = "#1e1e2e"
-    foreground = "#a6adc8"
-    frame_color = "#45475a"
+    background = "#0c0c0c"
+    foreground = "#9a9a9a"
+    frame_color = "#2e2e2e"
     timeout = 4
 
 [urgency_normal]
     background = "#1e1e2e"
     foreground = "#cdd6f4"
-    frame_color = "#cba6f7"
+    frame_color = "#3a3a3a"
     timeout = 8
 
 [urgency_critical]
-    background = "#1e1e2e"
-    foreground = "#cdd6f4"
-    frame_color = "#f38ba8"
+    background = "#0c0c0c"
+    foreground = "#ffffff"
+    frame_color = "#ffffff"
     timeout = 0

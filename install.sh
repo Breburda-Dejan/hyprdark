@@ -131,6 +131,8 @@ PKGS=(
     qt5-wayland qt6-wayland
     # shell components
     waybar rofi alacritty dunst
+    # login screen
+    sddm
     # audio
     pipewire pipewire-alsa pipewire-pulse wireplumber pavucontrol pamixer playerctl
     # tools used by binds/scripts
@@ -241,6 +243,26 @@ EOF
 fi
 sed -i '/__SUSPEND_LISTENER__/d' "$HL"
 
+# hyprlock: show battery state on laptops
+HLK="$HOME/.config/hypr/hyprlock.conf"
+if $IS_LAPTOP; then
+    cat >> "$HLK" << 'EOF'
+
+# Battery (laptop)
+label {
+    monitor =
+    text = cmd[update:30000] ~/.config/hypr/scripts/battery-status.sh
+    color = rgba(154, 154, 154, 1.0)
+    font_size = 14
+    font_family = JetBrainsMono Nerd Font
+    position = 0, -215
+    halign = center
+    valign = center
+}
+EOF
+fi
+sed -i '/__BATTERY_LABEL__/d' "$HLK"
+
 # machine.lua: the hardware-specific bits of the Hyprland Lua config
 MC="$HOME/.config/hypr/machine.lua"
 {
@@ -305,6 +327,8 @@ ZC="${ZSH_CUSTOM:-$OMZ/custom}"
     git clone --depth 1 https://github.com/zsh-users/zsh-autosuggestions "$ZC/plugins/zsh-autosuggestions"
 [[ -d "$ZC/plugins/zsh-syntax-highlighting" ]] || \
     git clone --depth 1 https://github.com/zsh-users/zsh-syntax-highlighting "$ZC/plugins/zsh-syntax-highlighting"
+[[ -d "$ZC/plugins/zsh-completions" ]] || \
+    git clone --depth 1 https://github.com/zsh-users/zsh-completions "$ZC/plugins/zsh-completions"
 mkdir -p "$ZC/themes"
 cp "$SCRIPT_DIR/configs/zsh/hyprdark.zsh-theme" "$ZC/themes/"
 cp "$SCRIPT_DIR/configs/zsh/zshrc" "$HOME/.zshrc"
@@ -323,8 +347,21 @@ sudo systemctl enable --now bluetooth.service      2>/dev/null || true
 $IS_LAPTOP && { sudo systemctl enable --now power-profiles-daemon.service 2>/dev/null || true; }
 ok "Services enabled"
 
-# ── autostart on tty1 ───────────────────────────────────────────────────────
-if $AUTOSTART && ! grep -q "hyprdark autostart" "$HOME/.zprofile" 2>/dev/null; then
+# ── SDDM login screen ───────────────────────────────────────────────────────
+SDDM_ENABLED=false
+if ask "Enable the SDDM login screen (hyprdark theme)?"; then
+    log "Installing the hyprdark SDDM theme…"
+    sudo mkdir -p /usr/share/sddm/themes /etc/sddm.conf.d
+    sudo cp -r "$SCRIPT_DIR/configs/sddm/hyprdark-sddm" /usr/share/sddm/themes/
+    sudo cp "$SCRIPT_DIR/wallpapers/hyprdark.png" /usr/share/sddm/themes/hyprdark-sddm/background.png
+    printf '[Theme]\nCurrent=hyprdark-sddm\n' | sudo tee /etc/sddm.conf.d/10-hyprdark.conf >/dev/null
+    sudo systemctl enable sddm.service 2>/dev/null || true
+    SDDM_ENABLED=true
+    ok "SDDM enabled with the hyprdark theme"
+fi
+
+# ── autostart on tty1 (only without SDDM) ───────────────────────────────────
+if ! $SDDM_ENABLED && $AUTOSTART && ! grep -q "hyprdark autostart" "$HOME/.zprofile" 2>/dev/null; then
     if ask "Start Hyprland automatically after login on tty1?"; then
         cat >> "$HOME/.zprofile" << 'EOF'
 # hyprdark autostart — launch Hyprland on tty1
@@ -342,7 +379,7 @@ echo -e "${C_GREEN}════════════════════�
 ok "hyprdark installed!  (config: ~/.config/hypr/hyprland.lua — edits reload live)"
 $did_backup && echo -e "   ${C_DIM}old configs saved under ~/backups/${C_RST}"
 echo "
-   Log out and back in on tty1 (or run 'Hyprland').
+   Reboot — SDDM greets you if you enabled it; otherwise log in on tty1.
 
    Essentials (your scheme):
      Super+T / Super+Enter   terminal      Super+A          app launcher

@@ -1,20 +1,14 @@
-/* hyprdark — Waybar (Catppuccin Mocha) */
+/* hyprdark — Waybar (monochrome) */
 
-@define-color base     #1e1e2e;
-@define-color mantle   #181825;
-@define-color crust    #11111b;
-@define-color surface0 #313244;
-@define-color surface1 #45475a;
-@define-color text     #cdd6f4;
-@define-color subtext  #a6adc8;
-@define-color mauve    #cba6f7;
-@define-color lavender #b4befe;
-@define-color blue     #89b4fa;
-@define-color green    #a6e3a1;
-@define-color yellow   #f9e2af;
-@define-color peach    #fab387;
-@define-color red      #f38ba8;
-@define-color teal     #94e2d5;
+@define-color bg       #0c0c0c;
+@define-color bg2      #121212;
+@define-color border   #262626;
+@define-color surface  #1c1c1c;
+@define-color text     #e8e8e8;
+@define-color subtext  #9a9a9a;
+@define-color dim      #565656;
+@define-color faint    #2e2e2e;
+@define-color white    #ffffff;
 
 * {
     font-family: "JetBrainsMono Nerd Font", sans-serif;
@@ -30,19 +24,18 @@ window#waybar {
     color: @text;
 }
 
-/* One rounded pill per module group */
 .modules-left,
 .modules-center,
 .modules-right {
-    background: alpha(@base, 0.92);
-    border: 1.5px solid alpha(@surface1, 0.8);
+    background: alpha(@bg, 0.92);
+    border: 1.5px solid alpha(@border, 0.9);
     border-radius: 14px;
     padding: 0 6px;
 }
 
 tooltip {
-    background: @mantle;
-    border: 1.5px solid @surface1;
+    background: @bg2;
+    border: 1.5px solid @border;
     border-radius: 10px;
 }
 tooltip label {
@@ -51,27 +44,25 @@ tooltip label {
 }
 
 #custom-launcher {
-    color: @mauve;
+    color: @white;
     font-size: 17px;
     padding: 0 12px 0 10px;
 }
-#custom-launcher:hover { color: @lavender; }
+#custom-launcher:hover { color: @subtext; }
 
-#workspaces {
-    padding: 0 4px;
-}
+#workspaces { padding: 0 4px; }
 #workspaces button {
-    color: @surface1;
+    color: @dim;
     padding: 0 5px;
     font-size: 12px;
     transition: all 0.25s ease;
 }
-#workspaces button.empty   { color: @surface0; }
+#workspaces button.empty   { color: @faint; }
 #workspaces button.visible { color: @subtext; }
-#workspaces button.active  { color: @mauve; }
-#workspaces button.urgent  { color: @red; }
+#workspaces button.active  { color: @white; }
+#workspaces button.urgent  { color: @white; text-decoration: underline; }
 #workspaces button:hover {
-    color: @lavender;
+    color: @white;
     background: transparent;
     box-shadow: none;
     text-shadow: none;
@@ -84,45 +75,33 @@ tooltip label {
 }
 
 #clock {
-    color: @lavender;
+    color: @white;
     padding: 0 14px;
 }
 
-#tray,
-#pulseaudio,
-#network,
-#cpu,
-#memory,
-#backlight,
-#battery,
-#custom-power {
+#tray, #pulseaudio, #network, #cpu, #memory,
+#backlight, #battery, #custom-power {
     padding: 0 10px;
     color: @text;
 }
+#tray { padding: 0 8px; }
 
-#tray            { padding: 0 8px; }
-#pulseaudio      { color: @teal; }
-#network         { color: @blue; }
-#cpu             { color: @green; }
-#memory          { color: @yellow; }
-#backlight       { color: @peach; }
-#battery         { color: @green; }
+#pulseaudio.muted     { color: @dim; }
+#network.disconnected { color: @dim; }
 
-#pulseaudio.muted           { color: @subtext; }
-#network.disconnected       { color: @red; }
-#cpu.warning, #memory.warning     { color: @peach; }
-#cpu.critical, #memory.critical   { color: @red; }
+#cpu.warning, #memory.warning,
+#battery.warning:not(.charging) { color: @white; }
 
-#battery.warning:not(.charging)  { color: @peach; }
+#cpu.critical, #memory.critical,
 #battery.critical:not(.charging) {
-    color: @red;
-    animation: blink 1s steps(6) infinite alternate;
+    color: @white;
+    animation: blink 1s steps(4) infinite alternate;
 }
-@keyframes blink { to { color: @surface1; } }
+@keyframes blink { to { color: @dim; } }
 
 #custom-power {
-    color: @red;
+    color: @text;
     font-size: 15px;
     padding: 0 12px 0 10px;
 }
-#custom-power:hover { color: @peach; }
+#custom-power:hover { color: @white; }

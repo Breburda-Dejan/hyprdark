@@ -12,6 +12,7 @@ plugins=(
     git
     sudo
     command-not-found
+    zsh-completions
     zsh-autosuggestions
     zsh-syntax-highlighting
 )
@@ -25,7 +26,7 @@ setopt HIST_IGNORE_ALL_DUPS SHARE_HISTORY HIST_REDUCE_BLANKS
 
 # ── Quality of life ─────────────────────────────────────────────────────────
 export EDITOR="${EDITOR:-nano}"
-ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#585b70"
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#4a4a4a"
 
 alias ls='eza --icons --group-directories-first'
 alias ll='eza -l --icons --group-directories-first --git'

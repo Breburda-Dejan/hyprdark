@@ -1,17 +1,12 @@
-# hyprdark — oh-my-zsh theme (Catppuccin Mocha, truecolor)
+# hyprdark — oh-my-zsh theme (monochrome, truecolor)
+# Shows: user @ host, cwd, git branch + state — always.
 
-ZSH_THEME_GIT_PROMPT_PREFIX=" %F{#a6adc8}on%f %F{#b4befe} "
+ZSH_THEME_GIT_PROMPT_PREFIX=" %F{#6a6a6a}on%f %F{#c9c9c9} "
 ZSH_THEME_GIT_PROMPT_SUFFIX="%f"
-ZSH_THEME_GIT_PROMPT_DIRTY=" %F{#f9e2af}✗%f"
-ZSH_THEME_GIT_PROMPT_CLEAN=" %F{#a6e3a1}✓%f"
+ZSH_THEME_GIT_PROMPT_DIRTY=" %F{#ffffff}✗%f"
+ZSH_THEME_GIT_PROMPT_CLEAN=" %F{#8a8a8a}✓%f"
 
-# ssh sessions show user@host, local shells stay minimal
-_host=""
-if [[ -n "$SSH_CONNECTION" ]]; then
-    _host="%F{#fab387}%n@%m%f "
-fi
+PROMPT='%F{#ffffff}%B%n%b%f%F{#5a5a5a}@%f%F{#b8b8b8}%m%f %F{#6a6a6a}in%f %F{#e6e6e6}%~%f$(git_prompt_info)
+%(?.%F{#e6e6e6}.%F{#ffffff})❯%f '
 
-PROMPT='%F{#cba6f7}╭─%f ${_host}%F{#89b4fa}%~%f$(git_prompt_info)
-%F{#cba6f7}╰─%f %(?.%F{#cba6f7}.%F{#f38ba8})❯%f '
-
-RPROMPT='%(?..%F{#f38ba8}✘ %?%f)'
+RPROMPT='%(?..%F{#9a9a9a}✘ %?%f)'
