@@ -23,3 +23,14 @@ end
 
 hl.on("hyprland.start", start_session)
 hl.timer(start_session, { timeout = 1500, type = "oneshot" })
+
+-- Tell systemd this is a graphical session (silences the "not started with
+-- start-hyprland" warning without pulling in uwsm, which upstream flagged
+-- as experimental in the 0.55-era wiki).
+hl.on("hyprland.start", function()
+    hl.exec_cmd("dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE XDG_SESSION_DESKTOP")
+    hl.exec_cmd("systemctl --user start hyprland-session.target")
+end)
+hl.on("hyprland.shutdown", function()
+    hl.exec_cmd("systemctl --user stop hyprland-session.target")
+end)

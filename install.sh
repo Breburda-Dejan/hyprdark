@@ -268,9 +268,8 @@ MC="$HOME/.config/hypr/machine.lua"
 {
     echo "-- hyprdark — machine.lua (generated $(date)) — machine-specific settings"
     cat << 'EOF'
--- Monitor default; add overrides below, e.g.:
---   hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = 1 })
-hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+-- machine-specific settings — lid switch, NVIDIA env, etc.
+-- Monitors live in monitors.lua (regenerate with ~/.config/hypr/scripts/setup-display.sh)
 EOF
     if $IS_LAPTOP; then
         cat << 'EOF'
@@ -373,6 +372,16 @@ EOF
     fi
 fi
 
+# ── monitor picker ──────────────────────────────────────────────────────────
+if ! $ASSUME_YES && ask "Run the interactive display picker now (resolution / refresh rate / scale / VRR)?"; then
+    # inside a session? run it; on a fresh tty just tell the user how
+    if [[ -n "$WAYLAND_DISPLAY" || -n "$HYPRLAND_INSTANCE_SIGNATURE" ]]; then
+        "$HOME/.config/hypr/scripts/setup-display.sh" || warn "display picker aborted"
+    else
+        warn "run '~/.config/hypr/scripts/setup-display.sh' once you're inside Hyprland"
+    fi
+fi
+
 # ── done ────────────────────────────────────────────────────────────────────
 echo
 echo -e "${C_GREEN}═══════════════════════════════════════════════════════${C_RST}"
@@ -388,9 +397,14 @@ echo "
      Super+L lock · Super+Backspace power menu · Super+V clipboard
      Super+Shift+S area shot · Alt+Return fullscreen · Super+W float
      Super+G group · Super+Alt+H/L cycle group · Super+1..0 workspaces
+     Super+B toggle waybar · Super+I toggle idle · Super+= / - magnifier
+     Super+Shift+R reload · Super+,/. dismiss notification
 
    Keyboard layout is 'de' — change in ~/.config/hypr/conf/input.lua.
    Full bind list: ~/.config/hypr/conf/keybindings.lua (and the README).
+
+   Change display setup:  ~/.config/hypr/scripts/setup-display.sh
+   Undo the install:      ./rollback.sh   (in this tarball dir)
 "
 $HAS_NVIDIA && warn "NVIDIA: make sure nvidia-dkms (or nvidia-open-dkms) is installed & up to date."
 warn "Binds for chatterino / whatsapp / virtualbox / wallpaperengine-gui exist but those apps aren't auto-installed — see README."

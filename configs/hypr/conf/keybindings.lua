@@ -166,3 +166,41 @@ hl.bind(mainMod .. " + CTRL + ALT + Left",  hl.dsp.window.move({ workspace = "r-
 -- Scroll through workspaces
 hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+
+
+-------------------------
+----   EXTRAS       -----
+-------------------------
+
+-- Reload the config manually (autoreloads on save, but handy)
+hl.bind(mainMod .. " + SHIFT + R", exec("hyprctl reload"))
+
+-- Toggle waybar without killing the session
+hl.bind(mainMod .. " + B", exec("pkill -SIGUSR1 waybar"))
+
+-- Toggle Hyprland's built-in cursor magnifier (zoom in / out / reset)
+hl.bind(mainMod .. " + equal",  exec([[hyprctl keyword cursor:zoom_factor "$(hyprctl getoption cursor:zoom_factor -j | jq -r '.float + 0.25')"]]))
+hl.bind(mainMod .. " + minus",  exec([[hyprctl keyword cursor:zoom_factor "$(hyprctl getoption cursor:zoom_factor -j | jq -r 'if (.float - 0.25) < 1 then 1 else (.float - 0.25) end')"]]))
+hl.bind(mainMod .. " + CTRL + 0", exec("hyprctl keyword cursor:zoom_factor 1"))
+
+-- Dismiss dunst notifications
+hl.bind(mainMod .. " + comma",  exec("dunstctl close"))
+hl.bind(mainMod .. " + period", exec("dunstctl history-pop"))
+
+-- Idle inhibit toggle — hyprland-hyprctl-based, no extra deps
+hl.bind(mainMod .. " + I", exec(
+    [[state="$(hyprctl getoption misc:idle_inhibit_when_shown -j | jq -r .int)"; ]] ..
+    [[if [ "$state" = 1 ]; then hyprctl keyword misc:idle_inhibit_when_shown 0; ]] ..
+    [[dunstify -a hyprdark-osd -u low "Idle inhibit off"; else ]] ..
+    [[hyprctl keyword misc:idle_inhibit_when_shown 1; ]] ..
+    [[dunstify -a hyprdark-osd -u low "Idle inhibit on"; fi]]))
+
+-- Pin the focused window (float above everything)
+-- pin dispatcher exists on newer builds; wrap so an old build doesn't fail load
+if hl.dsp.window and hl.dsp.window.pin then
+    hl.bind(mainMod .. " + SHIFT + P", hl.dsp.window.pin())
+end
+
+-- Cycle windows within a group with mouse wheel
+hl.bind(mainMod .. " + ALT + mouse_up",   hl.dsp.group.next())
+hl.bind(mainMod .. " + ALT + mouse_down", hl.dsp.group.prev())
