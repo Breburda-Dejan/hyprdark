@@ -4,47 +4,115 @@ A one-shot post-install for a fresh **Arch Linux** that sets up a dark, polished
 **Hyprland** desktop — Catppuccin Mocha everywhere, restrained animations, nothing
 that burns your eyes.
 
+**Requires Hyprland ≥ 0.55** — the compositor config is written in **Lua**
+(`~/.config/hypr/hyprland.lua`), which is the current format; hyprlang `.conf`
+is deprecated. Edits reload live the moment you save.
+
 ```
 tar xzf hyprdark.tar.gz
 cd hyprdark
 ./install.sh
 ```
 
-Run it as your normal user (it uses `sudo` where needed). Re-running is safe:
-existing configs are backed up to `~/.config-backup-hyprdark-<timestamp>/` first.
+Run it as your normal user (it uses `sudo` where needed). **Before touching
+anything**, your existing dotfiles are moved to `~/backups/`, mirroring your
+home layout (`~/backups/.config/hypr`, `~/backups/.zshrc`, …). Re-runs never
+clobber older backups — collisions get an `.old-<timestamp>` suffix.
 
 ## What it installs
 
 | Piece | Tool |
 |---|---|
-| Compositor | hyprland (+ hyprpaper, hyprpolkitagent, portals) |
+| Compositor | hyprland (Lua config) + hyprpaper, hyprpolkitagent, portals |
 | Bar | waybar — floating rounded pills |
-| Launcher | rofi (wayland-native since 2.0) |
+| Launcher | rofi |
 | Terminal | alacritty |
-| Notifications | dunst (with progress-bar OSD for volume/brightness) |
+| Notifications | dunst (progress-bar OSD for volume/brightness) |
 | Idle / lock | hypridle + hyprlock (blurred-screenshot lockscreen) |
 | Power menu | wlogout (AUR — yay is bootstrapped automatically if missing) |
 | Shell | zsh + oh-my-zsh, custom `hyprdark` prompt, autosuggestions, syntax highlighting, eza/bat/fzf |
-| Extras | thunar, pipewire audio stack, cliphist clipboard history, grim/slurp screenshots, btop, Papirus icons, JetBrainsMono Nerd Font, GTK forced dark |
+| Apps (your binds) | firefox, thunderbird, dolphin + ark, code, keepassxc, discord, spotify-launcher, pycharm-community |
+| Extras | pipewire stack, cliphist history, grim/slurp screenshots, btop, xdotool, Papirus icons, JetBrainsMono Nerd Font, GTK forced dark |
+
+Optional prompts during install: **Steam** (auto-enables the `[multilib]`
+repo) and AUR extras (**notion-app-electron, modrinth-app, localsend-bin**).
+Binds for chatterino, whatsapp-linux-desktop, virtualbox and your
+wallpaperengine GUI exist but those aren't auto-installed — install them
+yourself and the keys just start working.
 
 ## The "smart" part
 
-The installer probes your hardware and adapts:
+The installer probes your hardware and writes the result to
+`~/.config/hypr/machine.lua` so the main config stays portable:
 
-- **Laptop detected** (battery / DMI chassis type / hostnamectl):
-  - Lid-switch binds with **clamshell mode** — closing the lid with an external
-    monitor attached just disables the internal panel; without one it locks and
-    logind suspends. (`~/.config/hypr/scripts/lid.sh`, panel name overridable.)
-  - Battery module in waybar, suspend-after-15-min idle listener in hypridle,
-    `power-profiles-daemon` enabled.
-- **Backlight detected**: brightness module in waybar + `XF86MonBrightness` keys.
-- **Desktop**: all of the above is left out — no dead battery widget, no
-  surprise suspends.
-- **NVIDIA driver detected**: the recommended Wayland env vars and
-  `no_hardware_cursors` are added to `~/.config/hypr/machine.conf`.
+- **Laptop** (battery / DMI chassis / hostnamectl): lid-switch binds with
+  **clamshell mode** — lid closed + external monitor = internal panel off;
+  no external monitor = lock, then logind suspends. Battery module in waybar,
+  suspend-after-15-min idle, `power-profiles-daemon`.
+- **Backlight**: brightness waybar module + `XF86MonBrightness` keys.
+- **Desktop**: none of the above — no dead battery widget, no surprise suspends.
+- **NVIDIA**: recommended Wayland env vars + `no_hardware_cursors`.
 
-Everything machine-specific lands in `~/.config/hypr/machine.conf`, so the main
-`hyprland.conf` stays portable. Monitor overrides go there too.
+Monitor overrides go in `machine.lua` too:
+`hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = 1 })`
+
+## Config layout
+
+```
+~/.config/hypr/
+├── hyprland.lua          entry point — just require()s the modules below
+├── machine.lua           generated: monitors, lid switch, NVIDIA
+├── conf/
+│   ├── env.lua           environment variables
+│   ├── look.lua          colors, blur, shadows, animations
+│   ├── input.lua         keyboard (de), touchpad, gestures
+│   ├── windowrules.lua   window & layer rules
+│   ├── keybindings.lua   ← all keybinds live here
+│   └── autostart.lua     bar, wallpaper, daemons (hyprland.start hook)
+├── scripts/              volume/brightness OSD, screenshots, clipboard,
+│                         lid clamshell, dontkillsteam
+├── hypridle.conf · hyprlock.conf · hyprpaper.conf   (separate tools,
+│                                                     still hyprlang)
+└── wallpaper.png
+```
+
+Each `require()` is error-isolated by Hyprland: a mistake in one module pops
+a notification instead of taking down your session.
+
+## Keybinds (your scheme)
+
+| Keys | Action |
+|---|---|
+| `Super+T` / `Super+Enter` | terminal (alacritty) |
+| `Super+A` | app launcher · `Super+Tab` window switcher · `Super+Shift+E` file browser (rofi) |
+| `Super+Q` / `Alt+F4` | close window (hides Steam instead of killing it) |
+| `Super+W` | toggle floating · `Alt+Return` fullscreen |
+| `Super+G` | toggle group · `Super+Alt+H` / `Super+Alt+L` prev/next in group |
+| `Super+L` | lock · `Super+Backspace` power menu |
+| `Super+E` dolphin · `+F` firefox · `+C` code · `+D` discord · `+K` keepassxc | apps |
+| `Super+S` spotify · `+M` modrinth · `+N` notion · `+P` pycharm · `+Alt+M` thunderbird | more apps |
+| `Super+Alt+S` steam · `Super+Ctrl+V` virtualbox · `Super+Ctrl+W` Windows VM | gaming/VM |
+| `Super+Ctrl+L` | localsend (moved off Super+Alt+L, which is group-next) |
+| `Super+arrows` | focus · `+Shift` resize · `+Shift+Ctrl` move (floating-aware) |
+| `Super+Z` / `Super+X` | drag / resize with mouse (also `Super+LMB/RMB`) |
+| `Super+1..0` | workspace · `+Shift` move & follow · `+Alt` move silently |
+| `Super+Ctrl+←/→/↓` | workspace prev / next / first empty |
+| `Super+Shift+S` area · `Super+Ctrl+S` frozen area · `Super+Alt+Shift+S` monitor · `Print` all | screenshots |
+| `Super+V` / `Super+Shift+V` | clipboard: pick & copy / pick & delete |
+| `F10/F11/F12`, media & brightness keys | volume/brightness with OSD popup |
+
+Full list: `~/.config/hypr/conf/keybindings.lua` — edit and save, it reloads live.
+
+## Customizing
+
+- **Keyboard layout**: default is **de** — `conf/input.lua` → `kb_layout`.
+- **Wallpaper**: replace `~/.config/hypr/wallpaper.png`.
+- **Accent**: Catppuccin *mauve* (`#cba6f7`) — grep it across
+  `~/.config/{hypr,waybar,rofi,dunst,wlogout}` and swap any Mocha accent in.
+- **Idle timings**: `hypridle.conf` (lock 5 min, screen off 8 min, laptop
+  suspend 15 min).
+- **Display manager**: none installed — tty1 autostart via `~/.zprofile` is
+  offered instead; `sudo pacman -S sddm && sudo systemctl enable sddm` also works.
 
 ## Flags
 
@@ -55,41 +123,8 @@ Everything machine-specific lands in `~/.config/hypr/machine.conf`, so the main
 ./install.sh --no-autostart  # don't add tty1 → Hyprland to ~/.zprofile
 ```
 
-## Keybinds
-
-| Keys | Action |
-|---|---|
-| `Super+Enter` | terminal (alacritty) |
-| `Super+Space` | app launcher (rofi) |
-| `Super+Tab` | window switcher |
-| `Super+E` | file manager |
-| `Super+Q` | close window |
-| `Super+F` | fullscreen |
-| `Super+Shift+Space` | toggle floating |
-| `Super+arrows` / `+Shift` / `+Ctrl` | focus / move / resize |
-| `Super+1..0`, `+Shift` | switch / move to workspace |
-| `Super+S` | scratchpad |
-| `Super+V` | clipboard history |
-| `Super+Alt+L` | lock screen |
-| `Super+Escape` | power menu (wlogout) |
-| `Print` / `Shift+Print` / `Super+Shift+S` | screenshot area / full / area |
-| media & brightness keys | volume/brightness with OSD popup |
-
-## Customizing
-
-- **Keyboard layout**: `~/.config/hypr/hyprland.conf` → `input { kb_layout = us }`.
-- **Wallpaper**: replace `~/.config/hypr/wallpaper.png` (or edit `hyprpaper.conf`).
-- **Accent color**: it's Catppuccin *mauve* (`#cba6f7`) — grep for it across
-  `~/.config/{waybar,rofi,dunst,hypr,wlogout}` and swap in any Mocha accent
-  (blue `#89b4fa`, green `#a6e3a1`, peach `#fab387`, …).
-- **Idle timings**: `~/.config/hypr/hypridle.conf` (lock 5 min, screen off 8 min,
-  laptop suspend 15 min).
-- **Display manager**: none is installed — tty1 autologin-style start via
-  `~/.zprofile` is offered instead. If you prefer one, `sudo pacman -S sddm &&
-  sudo systemctl enable sddm` works fine with this setup.
-
 ## Uninstall / rollback
 
-Your previous dotfiles are in `~/.config-backup-hyprdark-<timestamp>/` — move
-them back and remove the packages you don't want. Nothing outside `~/.config`,
-`~/.zshrc`, `~/.zprofile`, and `~/.oh-my-zsh` is touched.
+Everything replaced lives in `~/backups/` — move it back and remove packages
+you don't want. Nothing outside `~/.config`, `~/.zshrc`, `~/.zprofile`,
+`~/.oh-my-zsh` and (if you opted into Steam) `/etc/pacman.conf` is touched.

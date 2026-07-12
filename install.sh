@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # ═══════════════════════════════════════════════════════════════════════════
-#  hyprdark — one-shot post-install for Arch + Hyprland
+#  hyprdark — one-shot post-install for Arch + Hyprland (≥ 0.55, Lua config)
 #  Dark, polished Catppuccin Mocha desktop:
 #  hyprland · waybar · rofi · alacritty · dunst · hyprlock · hypridle · wlogout
+#  + firefox, thunderbird, dolphin, code, keepassxc, discord, spotify, pycharm
 #
 #  Detects laptop vs desktop (lid switch, battery, backlight, suspend-on-idle)
 #  and NVIDIA GPUs, and adapts the configs accordingly.
+#  Backs up your existing configs to ~/backups/ BEFORE touching anything.
 #
 #  Usage:  ./install.sh [options]
-#    -y, --yes         non-interactive (assume yes everywhere)
-#        --no-aur      skip AUR entirely (wlogout won't be installed)
-#        --no-shell    don't change the login shell to zsh
+#    -y, --yes           non-interactive (assume yes everywhere)
+#        --no-aur        skip AUR entirely (wlogout & extras won't install)
+#        --no-shell      don't change the login shell to zsh
 #        --no-autostart  don't add Hyprland autostart to ~/.zprofile (tty1)
-#    -h, --help        show this help
+#    -h, --help          show this help
 # ═══════════════════════════════════════════════════════════════════════════
 if [ -z "${BASH_VERSION:-}" ]; then exec bash "$0" "$@"; fi   # ran with sh? → bash
 set -euo pipefail
@@ -45,6 +47,12 @@ ask() {  # ask "question" -> 0 = yes
     local reply
     read -rp "$(echo -e "${C_BLUE}?${C_RST} $1 [Y/n] ")" reply
     [[ -z "$reply" || "$reply" =~ ^[Yy] ]]
+}
+ask_no() {  # like ask, but default No
+    $ASSUME_YES && return 1
+    local reply
+    read -rp "$(echo -e "${C_BLUE}?${C_RST} $1 [y/N] ")" reply
+    [[ "$reply" =~ ^[Yy] ]]
 }
 
 # ── sanity checks ───────────────────────────────────────────────────────────
@@ -81,7 +89,7 @@ cat << 'BANNER'
   / __ \/ / / / __ \/ ___/ __  / __ `/ ___/ //_/
  / / / / /_/ / /_/ / /  / /_/ / /_/ / /  / ,<
 /_/ /_/\__, / .___/_/   \__,_/\__,_/_/  /_/|_|
-      /____/_/        Arch + Hyprland, but pretty
+      /____/_/     Arch + Hyprland (Lua), but pretty
 BANNER
 echo -e "${C_RST}"
 log "Detected machine profile:"
@@ -94,7 +102,26 @@ $HAS_BACKLIGHT && ok "Backlight found  →  brightness module + keys enabled" \
                || echo -e "${C_DIM}   no backlight device (brightness module skipped)${C_RST}"
 $HAS_NVIDIA && warn "NVIDIA driver detected  →  adding Wayland env vars for it"
 echo
-ask "Install packages and deploy the hyprdark configs?" || die "aborted"
+ask "Back up existing configs, install packages, deploy hyprdark?" || die "aborted"
+
+# ── backups FIRST — mirror of \$HOME under ~/backups ────────────────────────
+TS="$(date +%Y%m%d-%H%M%S)"
+BACKUP_ROOT="$HOME/backups"
+did_backup=false
+backup() {  # backup <path-under-home>   e.g. .config/hypr  or  .zshrc
+    local rel="$1" src="$HOME/$1"
+    [[ -e "$src" ]] || return 0
+    local dst="$BACKUP_ROOT/$rel"
+    mkdir -p "$(dirname "$dst")"
+    [[ -e "$dst" ]] && dst="$dst.old-$TS"     # don't clobber earlier backups
+    mv "$src" "$dst"
+    warn "backed up ~/$rel → ${dst/#$HOME/\~}"
+    did_backup=true
+}
+log "Backing up existing configs to ~/backups/ …"
+for d in hypr waybar rofi alacritty dunst wlogout; do backup ".config/$d"; done
+backup ".zshrc"
+$did_backup || echo -e "${C_DIM}   nothing to back up${C_RST}"
 
 # ── packages ────────────────────────────────────────────────────────────────
 PKGS=(
@@ -107,11 +134,12 @@ PKGS=(
     # audio
     pipewire pipewire-alsa pipewire-pulse wireplumber pavucontrol pamixer playerctl
     # tools used by binds/scripts
-    brightnessctl grim slurp wl-clipboard cliphist jq btop
+    brightnessctl grim slurp wl-clipboard cliphist jq btop xdotool
     # network / bluetooth
     networkmanager network-manager-applet bluez bluez-utils
-    # files
-    thunar thunar-volman tumbler gvfs
+    # apps wired to your keybinds
+    firefox thunderbird dolphin ark
+    code keepassxc discord spotify-launcher pycharm-community-edition
     # shell & cli niceties
     zsh git curl fzf eza bat
     # fonts & theming
@@ -125,43 +153,54 @@ log "Installing packages (pacman -Syu --needed)…"
 sudo pacman -Syu --needed "${NOCONFIRM[@]}" "${PKGS[@]}"
 ok "Repo packages installed"
 
-# ── wlogout (AUR) ───────────────────────────────────────────────────────────
-install_wlogout() {
-    if pacman -Qq wlogout &>/dev/null; then ok "wlogout already installed"; return; fi
-    if pacman -Si wlogout &>/dev/null; then
-        sudo pacman -S --needed "${NOCONFIRM[@]}" wlogout; return
+# ── steam (optional: needs the multilib repo) ───────────────────────────────
+if ask_no "Install Steam? (enables the [multilib] repo in /etc/pacman.conf)"; then
+    if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
+        sudo sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
     fi
-    $USE_AUR || { warn "wlogout is AUR-only and --no-aur was set — skipping (power menu binds won't work)"; return; }
-
-    local helper=""
-    for h in yay paru; do command -v "$h" >/dev/null && helper="$h" && break; done
-    if [[ -z "$helper" ]]; then
-        log "No AUR helper found — bootstrapping yay-bin…"
-        sudo pacman -S --needed "${NOCONFIRM[@]}" base-devel git
-        local tmp; tmp="$(mktemp -d)"
-        git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
-        ( cd "$tmp/yay-bin" && makepkg -si "${NOCONFIRM[@]}" )
-        rm -rf "$tmp"
-        helper="yay"
+    if grep -q '^\[multilib\]' /etc/pacman.conf; then
+        sudo pacman -Sy --needed "${NOCONFIRM[@]}" steam && ok "Steam installed"
+    else
+        warn "couldn't enable [multilib] automatically — enable it in /etc/pacman.conf, then: sudo pacman -S steam"
     fi
-    log "Installing wlogout from AUR via $helper…"
-    "$helper" -S --needed "${NOCONFIRM[@]}" wlogout
-    ok "wlogout installed"
-}
-install_wlogout
+fi
 
-# ── backup old configs ──────────────────────────────────────────────────────
-TS="$(date +%Y%m%d-%H%M%S)"
-BACKUP="$HOME/.config-backup-hyprdark-$TS"
-backup() {
-    local p="$1"
-    [[ -e "$p" ]] || return 0
-    mkdir -p "$BACKUP"
-    mv "$p" "$BACKUP/"
-    warn "backed up $(basename "$p") → $BACKUP/"
+# ── AUR: wlogout + optional extras ──────────────────────────────────────────
+AUR_HELPER=""
+ensure_aur_helper() {
+    [[ -n "$AUR_HELPER" ]] && return 0
+    for h in yay paru; do command -v "$h" >/dev/null && AUR_HELPER="$h" && return 0; done
+    log "No AUR helper found — bootstrapping yay-bin…"
+    sudo pacman -S --needed "${NOCONFIRM[@]}" base-devel git
+    local tmp; tmp="$(mktemp -d)"
+    git clone --depth 1 https://aur.archlinux.org/yay-bin.git "$tmp/yay-bin"
+    ( cd "$tmp/yay-bin" && makepkg -si "${NOCONFIRM[@]}" )
+    rm -rf "$tmp"
+    AUR_HELPER="yay"
 }
-for d in hypr waybar rofi alacritty dunst wlogout; do backup "$HOME/.config/$d"; done
-backup "$HOME/.zshrc"
+
+if pacman -Si wlogout &>/dev/null; then
+    sudo pacman -S --needed "${NOCONFIRM[@]}" wlogout
+elif $USE_AUR; then
+    ensure_aur_helper
+    "$AUR_HELPER" -S --needed "${NOCONFIRM[@]}" wlogout && ok "wlogout installed (AUR)"
+else
+    warn "wlogout is AUR-only and --no-aur was set — skipping (SUPER+Backspace won't work)"
+fi
+
+# apps from your binds that only exist in the AUR — install what succeeds,
+# skip what doesn't; the keybinds are there either way
+OPTIONAL_AUR=(notion-app-electron modrinth-app localsend-bin)
+if $USE_AUR && ask_no "Install optional AUR apps (${OPTIONAL_AUR[*]})?"; then
+    ensure_aur_helper
+    for pkg in "${OPTIONAL_AUR[@]}"; do
+        if "$AUR_HELPER" -S --needed "${NOCONFIRM[@]}" "$pkg"; then
+            ok "$pkg"
+        else
+            warn "$pkg failed to build/install — skipped"
+        fi
+    done
+fi
 
 # ── deploy configs ──────────────────────────────────────────────────────────
 log "Deploying configs…"
@@ -202,37 +241,39 @@ EOF
 fi
 sed -i '/__SUSPEND_LISTENER__/d' "$HL"
 
-# machine.conf: the hardware-specific bits of hyprland.conf
-MC="$HOME/.config/hypr/machine.conf"
+# machine.lua: the hardware-specific bits of the Hyprland Lua config
+MC="$HOME/.config/hypr/machine.lua"
 {
-    echo "# hyprdark — generated $(date) — machine-specific settings"
-    echo "# Monitor overrides go here, e.g.:"
-    echo "# monitor = DP-1, 2560x1440@144, 0x0, 1"
-    echo
+    echo "-- hyprdark — machine.lua (generated $(date)) — machine-specific settings"
+    cat << 'EOF'
+-- Monitor default; add overrides below, e.g.:
+--   hl.monitor({ output = "DP-1", mode = "2560x1440@144", position = "0x0", scale = 1 })
+hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+EOF
     if $IS_LAPTOP; then
         cat << 'EOF'
-# ── Laptop: lid switch (clamshell-aware) ────────────────────────────────────
-# Closing the lid with an external monitor attached disables the internal
-# panel; without one it locks, then logind suspends (its default).
-# If your panel isn't eDP-1, check `hyprctl monitors` and edit lid.sh.
-bindl = , switch:on:Lid Switch,  exec, ~/.config/hypr/scripts/lid.sh close
-bindl = , switch:off:Lid Switch, exec, ~/.config/hypr/scripts/lid.sh open
+
+-- ── Laptop: lid switch (clamshell-aware) ────────────────────────────────────
+-- Closing the lid with an external monitor attached disables the internal
+-- panel; without one it locks, then logind suspends (its default).
+-- If your panel isn't eDP-1, check `hyprctl monitors` and edit lid.sh.
+local lid = os.getenv("HOME") .. "/.config/hypr/scripts/lid.sh"
+hl.bind("switch:on:Lid Switch",  hl.dsp.exec_cmd(lid .. " close"), { locked = true })
+hl.bind("switch:off:Lid Switch", hl.dsp.exec_cmd(lid .. " open"),  { locked = true })
 EOF
-        echo
     fi
     if $HAS_NVIDIA; then
         cat << 'EOF'
-# ── NVIDIA ──────────────────────────────────────────────────────────────────
-env = LIBVA_DRIVER_NAME,nvidia
-env = __GLX_VENDOR_LIBRARY_NAME,nvidia
-env = NVD_BACKEND,direct
-cursor {
-    no_hardware_cursors = true
-}
+
+-- ── NVIDIA ──────────────────────────────────────────────────────────────────
+hl.env("LIBVA_DRIVER_NAME", "nvidia")
+hl.env("__GLX_VENDOR_LIBRARY_NAME", "nvidia")
+hl.env("NVD_BACKEND", "direct")
+hl.config({ cursor = { no_hardware_cursors = true } })
 EOF
     fi
 } > "$MC"
-ok "Configs deployed (hardware profile: $($IS_LAPTOP && echo laptop || echo desktop))"
+ok "Configs deployed (hardware profile: $($IS_LAPTOP && echo laptop || echo desktop), layout: de)"
 
 # ── GTK dark theme ──────────────────────────────────────────────────────────
 log "Setting dark GTK theme (Adwaita-dark + Papirus-Dark)…"
@@ -248,7 +289,6 @@ gtk-cursor-theme-size = 24
 gtk-font-name = Noto Sans 10.5
 EOF
 done
-# best effort — needs a session bus, harmless if it fails now
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark' 2>/dev/null || true
 gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'   2>/dev/null || true
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'  2>/dev/null || true
@@ -299,20 +339,22 @@ fi
 # ── done ────────────────────────────────────────────────────────────────────
 echo
 echo -e "${C_GREEN}═══════════════════════════════════════════════════════${C_RST}"
-ok "hyprdark installed!"
-[[ -d "$BACKUP" ]] && echo -e "   ${C_DIM}old configs saved in $BACKUP${C_RST}"
+ok "hyprdark installed!  (config: ~/.config/hypr/hyprland.lua — edits reload live)"
+$did_backup && echo -e "   ${C_DIM}old configs saved under ~/backups/${C_RST}"
 echo "
    Log out and back in on tty1 (or run 'Hyprland').
 
-   Essentials:
-     Super+Enter      terminal        Super+Space   app launcher
-     Super+Q          close window    Super+E       files
-     Super+Alt+L      lock            Super+Escape  power menu
-     Super+V          clipboard       Print         screenshot (area)
-     Super+1..0       workspaces      Super+F       fullscreen
+   Essentials (your scheme):
+     Super+T / Super+Enter   terminal      Super+A          app launcher
+     Super+Q / Alt+F4        close         Super+E          dolphin
+     Super+F firefox · +C code · +D discord · +S spotify · +K keepassxc
+     Super+L lock · Super+Backspace power menu · Super+V clipboard
+     Super+Shift+S area shot · Alt+Return fullscreen · Super+W float
+     Super+G group · Super+Alt+H/L cycle group · Super+1..0 workspaces
 
-   Keyboard layout is 'us' — change it in ~/.config/hypr/hyprland.conf
-   (input → kb_layout). Full list of binds in the README.
+   Keyboard layout is 'de' — change in ~/.config/hypr/conf/input.lua.
+   Full bind list: ~/.config/hypr/conf/keybindings.lua (and the README).
 "
 $HAS_NVIDIA && warn "NVIDIA: make sure nvidia-dkms (or nvidia-open-dkms) is installed & up to date."
+warn "Binds for chatterino / whatsapp / virtualbox / wallpaperengine-gui exist but those apps aren't auto-installed — see README."
 exit 0
