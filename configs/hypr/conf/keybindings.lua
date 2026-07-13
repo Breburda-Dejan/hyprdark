@@ -204,3 +204,13 @@ end
 -- Cycle windows within a group with mouse wheel
 hl.bind(mainMod .. " + ALT + mouse_up",   hl.dsp.group.next())
 hl.bind(mainMod .. " + ALT + mouse_down", hl.dsp.group.prev())
+
+-- Color picker → hex to clipboard
+hl.bind(mainMod .. " + SHIFT + C", exec(
+    [[sh -c 'c=$(hyprpicker -a) && dunstify -a hyprdark-osd -u low "  $c" "copied to clipboard"']]))
+
+-- Night light toggle (hyprsunset, 4000K)
+hl.bind(mainMod .. " + F9", exec(scrPath .. "/nightlight.sh"))
+
+-- Region screen recording toggle (wf-recorder → ~/Videos)
+hl.bind(mainMod .. " + ALT + R", exec(scrPath .. "/record.sh"))

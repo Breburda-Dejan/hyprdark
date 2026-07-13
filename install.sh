@@ -137,6 +137,9 @@ PKGS=(
     pipewire pipewire-alsa pipewire-pulse wireplumber pavucontrol pamixer playerctl
     # tools used by binds/scripts
     brightnessctl grim slurp wl-clipboard cliphist jq btop xdotool
+    hyprpicker hyprsunset wf-recorder
+    # maintenance & archives
+    pacman-contrib 7zip unzip
     # network / bluetooth
     networkmanager network-manager-applet bluez bluez-utils
     # apps wired to your keybinds
@@ -151,6 +154,13 @@ PKGS=(
 $IS_LAPTOP && PKGS+=(power-profiles-daemon)
 
 NOCONFIRM=(); $ASSUME_YES && NOCONFIRM=(--noconfirm)
+
+# pacman quality of life: color, parallel downloads, the candy
+log "Tuning /etc/pacman.conf (Color, ParallelDownloads, ILoveCandy)…"
+sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
+sudo sed -i 's/^#ParallelDownloads.*/ParallelDownloads = 8/' /etc/pacman.conf
+grep -q '^ILoveCandy' /etc/pacman.conf || sudo sed -i '/^Color$/a ILoveCandy' /etc/pacman.conf
+
 log "Installing packages (pacman -Syu --needed)…"
 sudo pacman -Syu --needed "${NOCONFIRM[@]}" "${PKGS[@]}"
 ok "Repo packages installed"
@@ -360,16 +370,21 @@ log "Enabling services…"
 sudo systemctl enable --now NetworkManager.service 2>/dev/null || true
 sudo systemctl enable --now bluetooth.service      2>/dev/null || true
 $IS_LAPTOP && { sudo systemctl enable --now power-profiles-daemon.service 2>/dev/null || true; }
-ok "Services enabled"
+sudo systemctl enable --now fstrim.timer   2>/dev/null || true   # weekly SSD TRIM
+sudo systemctl enable --now paccache.timer 2>/dev/null || true   # keep pkg cache tidy
+ok "Services enabled (incl. fstrim + paccache timers)"
 
 # ── SDDM login screen ───────────────────────────────────────────────────────
 SDDM_ENABLED=false
 if ask "Enable the SDDM login screen?"; then
-    SDDM_THEME="hyprdark-sddm"
-    if ! $ASSUME_YES; then
-        echo "   themes:  1) hyprdark (bundled, monochrome)   2) astronaut (AUR, animated)"
+    # default: sddm-astronaut-theme — the maintained, Qt6-native dark theme.
+    # The bundled minimal theme stays as a fallback for --no-aur setups.
+    SDDM_THEME="sddm-astronaut-theme"
+    $USE_AUR || SDDM_THEME="hyprdark-sddm"
+    if ! $ASSUME_YES && $USE_AUR; then
+        echo "   themes:  1) astronaut (AUR — known good, dark, animated)   2) hyprdark (bundled minimal)"
         read -rp "   pick [1]: " tsel
-        [[ "${tsel:-1}" == "2" ]] && SDDM_THEME="sddm-astronaut-theme"
+        [[ "${tsel:-1}" == "2" ]] && SDDM_THEME="hyprdark-sddm"
     fi
 
     if [[ "$SDDM_THEME" == "sddm-astronaut-theme" ]]; then
@@ -383,6 +398,18 @@ if ask "Enable the SDDM login screen?"; then
         else
             warn "--no-aur set — astronaut is AUR-only, using bundled hyprdark theme"
             SDDM_THEME="hyprdark-sddm"
+        fi
+    fi
+
+    if [[ "$SDDM_THEME" == "sddm-astronaut-theme" ]] && ! $ASSUME_YES; then
+        echo "   astronaut variants: 1) astronaut (default) 2) black_hole (darkest) 3) purple_leaves 4) hyprland_kath"
+        read -rp "   pick [1]: " vsel
+        case "${vsel:-1}" in
+            2) AV="black_hole" ;; 3) AV="purple_leaves" ;; 4) AV="hyprland_kath" ;; *) AV="" ;;
+        esac
+        if [[ -n "$AV" && -f "/usr/share/sddm/themes/sddm-astronaut-theme/metadata.desktop" ]]; then
+            sudo sed -i "s|^ConfigFile=.*|ConfigFile=Themes/${AV}.conf|" \
+                /usr/share/sddm/themes/sddm-astronaut-theme/metadata.desktop && ok "variant: $AV"
         fi
     fi
 
@@ -464,6 +491,8 @@ echo "
      Super+Shift+S area shot · Alt+Return fullscreen · Super+W float
      Super+G group · Super+Alt+H/L cycle group · Super+1..0 workspaces
      Super+B toggle waybar · Super+I toggle idle · Super+= / - magnifier
+     Super+F9 night light · Super+Alt+R record region · Super+Shift+C color picker
+     Caps Lock = Escape (change in conf/input.lua)
      Super+Shift+R reload · Super+,/. dismiss notification
 
    Keyboard layout is 'de' — change in ~/.config/hypr/conf/input.lua.
